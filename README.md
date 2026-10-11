@@ -1,6 +1,6 @@
 # Thermalright Color Studio
 
-让数码管，有自己的颜色。为 **Thermalright PS120 DIGITAL / LF8 面板**制作的 Windows 配色与监控工具。
+为 **Thermalright PS120 DIGITAL / LF8 面板**制作的 Windows 配色与监控工具。
 
 [English](README.en.md) · [下载 0.3.4](https://github.com/febtsuki/thermalright-color-studio/releases/latest) · [SignalRGB 接入](docs/SignalRGB.md)
 
