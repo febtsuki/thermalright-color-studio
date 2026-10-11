@@ -1,0 +1,35 @@
+name: Windows build and checks
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Build portable app
+        shell: pwsh
+        run: ./build.ps1
+      - name: Run hardware-independent checks
+        shell: pwsh
+        run: |
+          dotnet ./src/ThermalrightColorStudio/bin/Release/net10.0-windows/win-x64/ThermalrightColorStudio.dll --self-test "$env:RUNNER_TEMP/self-tests.txt"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-Content "$env:RUNNER_TEMP/self-tests.txt"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: thermalright-color-studio-win-x64
+          path: |
+            publish/**
+            !publish/*.pdb
+          if-no-files-found: error

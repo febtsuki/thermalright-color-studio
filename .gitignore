@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+publish/
+data/
+.vs/
+*.user
+*.pdb
+*.log
+*.zip
+launch-error.txt

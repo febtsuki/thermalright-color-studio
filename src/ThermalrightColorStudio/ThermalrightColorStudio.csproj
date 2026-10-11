@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF><UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable><ImplicitUsings>disable</ImplicitUsings>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <AssemblyName>ThermalrightColorStudio</AssemblyName><Version>0.3.4</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets/StudioIcon.ico</ApplicationIcon>
+    <StartupObject>ThermalrightColorStudio.Program</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="Assets/StudioIcon.png" />
+    <EmbeddedResource Include="Assets/StudioIcon.ico" LogicalName="ThermalrightColorStudio.StudioIcon.ico" />
+    <EmbeddedResource Include="Assets/SignalRGBBridge.qml" LogicalName="ThermalrightColorStudio.SignalRGBBridge.qml" />
+    <EmbeddedResource Include="Assets/SignalRGBBridge.js" LogicalName="ThermalrightColorStudio.SignalRGBBridge.js" />
+    <PackageReference Include="HidSharp" Version="2.6.4" />
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
+  </ItemGroup>
+</Project>
