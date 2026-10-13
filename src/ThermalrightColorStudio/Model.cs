@@ -35,6 +35,11 @@ public sealed class StudioSettings
     public bool SignalRgbSync { get; set; }
     public bool SignalRgbFallback { get; set; } = true;
     public double SignalRgbSmoothing { get; set; }
+    public bool SignalRgbFiltersEnabled { get; set; } = true;
+    public double SignalRgbExposure { get; set; }
+    public double SignalRgbBrightness { get; set; } = 100;
+    public double SignalRgbSaturation { get; set; } = 100;
+    public double SignalRgbContrast { get; set; } = 100;
     public bool ReadMotherboard { get; set; }
     public double LinkLow { get; set; } = 30;
     public double LinkHigh { get; set; } = 90;
@@ -45,8 +50,12 @@ public sealed class StudioSettings
         if (SchemaVersion != 1) throw new InvalidDataException("不支持此配置版本。");
         if (Palette is null || Palette.Count is < 1 or > 16 || Palette.Any(s => s is null || !Rgb.TryParse(s.Hex, out _) || !double.IsFinite(s.Position) || s.Position is < 0 or > 1)) throw new InvalidDataException("色板需要 1–16 个有效 HEX 色标，位置为 0–1。");
         if (!Enum.IsDefined(Pattern) || !Enum.IsDefined(Motion)) throw new InvalidDataException("未知效果类型。");
-        foreach (var x in new[] { Angle, Brightness, Period, CenterX, CenterY, Repeats, RotateSeconds, LinkLow, LinkHigh, SignalRgbSmoothing }) if (!double.IsFinite(x)) throw new InvalidDataException("配置数值无效。");
+        foreach (var x in new[] { Angle, Brightness, Period, CenterX, CenterY, Repeats, RotateSeconds, LinkLow, LinkHigh, SignalRgbSmoothing, SignalRgbExposure, SignalRgbBrightness, SignalRgbSaturation, SignalRgbContrast }) if (!double.IsFinite(x)) throw new InvalidDataException("配置数值无效。");
         SignalRgbSmoothing = Math.Clamp(SignalRgbSmoothing, 0, 100);
+        SignalRgbExposure = Math.Clamp(SignalRgbExposure, -3, 3);
+        SignalRgbBrightness = Math.Clamp(SignalRgbBrightness, 0, 200);
+        SignalRgbSaturation = Math.Clamp(SignalRgbSaturation, 0, 200);
+        SignalRgbContrast = Math.Clamp(SignalRgbContrast, 0, 200);
         Brightness = Math.Clamp(Brightness, 0, 100); Period = Math.Clamp(Period, .5, 60);
         Angle = ((Angle % 360) + 360) % 360; CenterX = Math.Clamp(CenterX, 0, 1); CenterY = Math.Clamp(CenterY, 0, 1);
         Repeats = Math.Clamp(Repeats, 1, 12); RotateSeconds = Math.Clamp(RotateSeconds, 1, 60);

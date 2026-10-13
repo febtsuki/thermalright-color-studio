@@ -12,7 +12,7 @@ This independent GPL-3.0 project is not affiliated with Thermalright or SignalRG
 
 Custom 1–16 color palettes, arbitrary-angle gradients, radial/mirrored/conic effects, stripes, per-metric zones, animation and temperature/load effects. Includes an HSV wheel with a saturation/value square, HEX/RGB editing, light/dark themes, presets, undo/redo and tray operation.
 
-Displays real CPU/GPU temperature, power, clock and load, with source rotation and Celsius/Fahrenheit support. SignalRGB integration forwards global lighting while Color Studio retains real numeric masks. Adjustable spatial Gaussian smoothing softens abrupt color transitions between segments.
+Displays real CPU/GPU temperature, power, clock and load, with source rotation and Celsius/Fahrenheit support. SignalRGB integration forwards global lighting while Color Studio retains real numeric masks. Adjustable spatial Gaussian smoothing softens abrupt color transitions between segments. Post-smoothing exposure, brightness gain, saturation and contrast controls provide local color grading with a bypass switch and reset. Neutral defaults preserve existing colors.
 
 ## Run
 
@@ -33,7 +33,7 @@ Use Windows x64 and .NET SDK 10.0.401:
 dotnet ./src/ThermalrightColorStudio/bin/Release/net10.0-windows/win-x64/ThermalrightColorStudio.dll --self-test ./test-results.txt
 ```
 
-The portable app is produced in `publish/`. There are 40 automated checks; see [validation](docs/Validation.md) for their scope and actual hardware observations. Dependencies are locked in `packages.lock.json`.
+The portable app is produced in `publish/`. There are 56 automated checks; see [validation](docs/Validation.md) for their scope and actual hardware observations. Dependencies are locked in `packages.lock.json`.
 
 ## Credits
 

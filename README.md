@@ -2,7 +2,7 @@
 
 为 **Thermalright PS120 DIGITAL / LF8 面板**制作的 Windows 配色与监控工具。
 
-[English](README.en.md) · [下载 0.3.4](https://github.com/febtsuki/thermalright-color-studio/releases/latest) · [SignalRGB 接入](docs/SignalRGB.md)
+[English](README.en.md) · [下载 0.3.5](https://github.com/febtsuki/thermalright-color-studio/releases/latest) · [SignalRGB 接入](docs/SignalRGB.md)
 
 ![Color Studio 界面，数字为模拟示例](docs/screenshots/studio.png)
 
@@ -17,6 +17,7 @@
 - 启动自动连接、关闭转入托盘、设置保存、预设导入导出、撤销/重做。
 - **SignalRGB 全局灯效同步**，保留本软件生成的真实数字；数据中断时可回到独立配色。
 - **0–100% 空间高斯平滑**，柔化 SignalRGB 色块之间的生硬过渡。
+- **同步调色滤镜**：曝光、亮度增益、饱和度、对比度，带旁路开关与一键重置。
 - 可选登录自启动，无需每次手动启动脚本。
 
 ## 已验证的环境
@@ -32,7 +33,7 @@
 
 ## 使用
 
-1. 从 [Releases](https://github.com/febtsuki/thermalright-color-studio/releases) 下载 `thermalright-color-studio-v0.3.4-win-x64.zip` 并解压到可写目录。
+1. 从 [Releases](https://github.com/febtsuki/thermalright-color-studio/releases) 下载 `thermalright-color-studio-v0.3.5-win-x64.zip` 并解压到可写目录。
 2. 完全退出原版 TRCC，包括系统托盘，避免同时写入 USB 面板。
 3. 双击 `ThermalrightColorStudio.exe`。程序会请求管理员权限，用于读取底层传感器；.NET 运行库已包含。
 4. CPU 底层传感器还需要单独安装官方 [PawnIO 2.2.0](https://github.com/namazso/PawnIO.Setup/releases/tag/2.2.0)。本包不包含或自动安装驱动。
@@ -45,6 +46,8 @@
 请参阅 [接入说明](docs/SignalRGB.md)。两款软件需要同时运行；Color Studio 独占 USB，SignalRGB 通过本机回环网络发送颜色。
 
 在“灯光来源”选择 SignalRGB 同步，调节“空间平滑”。**0% 保留原色，40% 可作为初次对比值**。强度越高，颜色越柔和，也会减少局部反差。平滑发生在生成数字之前，不会模糊数字形状。每个实体段仍只能显示一种颜色。
+
+“同步调色”提供曝光 ±3 EV、亮度增益/饱和度/对比度 0–200%。它在平滑后处理颜色，可补偿平滑后的亮度与色彩反差。默认曝光 0、其他 100%，保留原效果；取消“启用调色”可旁路对比。纯黑保持熄灭，重置只还原调色，不改变平滑。整体亮度仍在最后控制输出。
 
 ### 登录自启动
 
@@ -64,7 +67,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./Manage-Autostart.ps1
 ./build.ps1
 ```
 
-输出在 `publish/`。NuGet 依赖由 `packages.lock.json` 锁定。运行不涉及硬件的 40 项检查：
+输出在 `publish/`。NuGet 依赖由 `packages.lock.json` 锁定。运行不涉及硬件的 56 项检查：
 
 ```powershell
 dotnet ./src/ThermalrightColorStudio/bin/Release/net10.0-windows/win-x64/ThermalrightColorStudio.dll --self-test ./test-results.txt

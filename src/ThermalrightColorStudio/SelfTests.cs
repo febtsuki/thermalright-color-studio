@@ -66,6 +66,43 @@ public static class SelfTests
         Check("旧配置不自动改变同步色彩", migrated.SignalRgbSmoothing == 0);
         var smoothSettings = SettingsStore.Deserialize("{\"SignalRgbSmoothing\":150}");
         Check("平滑参数限定范围且可保存", smoothSettings.SignalRgbSmoothing == 100 && SettingsStore.Deserialize(SettingsStore.Serialize(smoothSettings)).SignalRgbSmoothing == 100);
+        var grading = new StudioSettings();
+        Check("同步调色默认精确保留原始帧", SignalColorFilters.Apply(colors, grading).SequenceEqual(colors));
+        grading.SignalRgbExposure = 2; grading.SignalRgbFiltersEnabled = false;
+        Check("调色旁路保留参数但不改变颜色", SignalColorFilters.Apply(colors, grading).SequenceEqual(colors) && grading.SignalRgbExposure == 2);
+        grading = new StudioSettings { SignalRgbExposure = 1 };
+        var exposed = SignalColorFilters.Apply([new Rgb(128,128,128)], grading)[0];
+        Check("正一档曝光提升线性光亮度", exposed.R is >= 175 and <= 176 && exposed.R == exposed.G && exposed.G == exposed.B);
+        grading = new StudioSettings { SignalRgbBrightness = 200 };
+        Check("亮度增益提升颜色", SignalColorFilters.Apply([new Rgb(64,32,16)], grading)[0] == new Rgb(128,64,32));
+        grading = new StudioSettings { SignalRgbSaturation = 0 };
+        var gray = SignalColorFilters.Apply([new Rgb(255,0,0)], grading)[0];
+        Check("零饱和度转为等通道灰色", gray == new Rgb(54,54,54));
+        grading.SignalRgbSaturation = 200;
+        var saturated = SignalColorFilters.Apply([new Rgb(100,120,140)], grading)[0];
+        Check("提高饱和度扩大颜色差异", saturated.B - saturated.R > 40);
+        grading = new StudioSettings { SignalRgbContrast = 200 };
+        var contrasted = SignalColorFilters.Apply([new Rgb(64,128,192)], grading)[0];
+        Check("提高对比度拉开明暗", contrasted.R <= 1 && contrasted.G is >= 128 and <= 129 && contrasted.B == 255);
+        grading = new StudioSettings { SignalRgbExposure = 3, SignalRgbContrast = 0, SignalRgbBrightness = 200 };
+        Check("调色保持纯黑区域熄灭", SignalColorFilters.Apply([default], grading)[0] == default);
+        grading.SignalRgbBrightness = 0;
+        Check("零亮度增益熄灭所有颜色", SignalColorFilters.Apply(colors, grading).All(c => c == default));
+        grading = new StudioSettings { SignalRgbExposure = 3, SignalRgbBrightness = 200 };
+        Check("调色过曝截断且不回绕", SignalColorFilters.Apply([new Rgb(200,200,200)], grading)[0] == new Rgb(255,255,255));
+        var filterInput = colors.ToArray(); _ = SignalColorFilters.Apply(colors, grading);
+        Check("同步调色不修改接收原始帧", colors.SequenceEqual(filterInput));
+        grading.SignalRgbSmoothing = 40; grading.Brightness = 50;
+        var gradedFrame = SignalBridge.MaskFrame(step, grading, new(45,90,4500,50), "CPU");
+        var gradeExpected = SignalColorFilters.Apply(SignalColorSmoothing.Apply(step, 40), grading);
+        Check("同步调色在平滑后且保留掩码和整体亮度", Enumerable.Range(0,93).All(i => gradedFrame[i] == (expectedMask[i] ? gradeExpected[i].Scale(.5) : default)));
+        Check("旧配置迁移保持中性调色", migrated.SignalRgbFiltersEnabled && migrated.SignalRgbExposure == 0 && migrated.SignalRgbBrightness == 100 && migrated.SignalRgbSaturation == 100 && migrated.SignalRgbContrast == 100);
+        var gradeSaved = SettingsStore.Deserialize(SettingsStore.Serialize(grading));
+        Check("调色参数配置往返", gradeSaved.SignalRgbExposure == 3 && gradeSaved.SignalRgbBrightness == 200 && gradeSaved.SignalRgbSmoothing == 40);
+        var gradeLimits = SettingsStore.Deserialize("{\"SignalRgbExposure\":99,\"SignalRgbBrightness\":-1,\"SignalRgbSaturation\":300,\"SignalRgbContrast\":-5}");
+        Check("调色参数限定安全范围", gradeLimits.SignalRgbExposure == 3 && gradeLimits.SignalRgbBrightness == 0 && gradeLimits.SignalRgbSaturation == 200 && gradeLimits.SignalRgbContrast == 0);
+        bool badGrade = false; try { new StudioSettings { SignalRgbExposure = double.NaN }.Validate(); } catch (InvalidDataException) { badGrade = true; }
+        Check("拒绝无效调色数值", badGrade);
         return string.Join(Environment.NewLine, passed) + $"\n{passed.Count} checks passed.\n";
     }
 }

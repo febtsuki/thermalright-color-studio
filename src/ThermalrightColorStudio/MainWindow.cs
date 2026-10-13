@@ -43,7 +43,7 @@ public sealed class MainWindow : Window
         StudioTheme.Apply(settings.LightTheme); ApplyStyles();
         var root = new Grid(); root.ColumnDefinitions.Add(new() { Width = new GridLength(206) }); root.ColumnDefinitions.Add(new()); Content = root;
         var side = new StackPanel { Margin = new Thickness(20, 26, 16, 20) }; root.Children.Add(new Border { Background = StudioTheme.Sidebar, Child = side });
-        side.Children.Add(Text("THERMALRIGHT", 11, Muted)); side.Children.Add(Text("Color Studio", 24)); side.Children.Add(Text("PS120 DIGITAL / v0.3.4", 11, Muted));
+        side.Children.Add(Text("THERMALRIGHT", 11, Muted)); side.Children.Add(Text("Color Studio", 24)); side.Children.Add(Text("PS120 DIGITAL / v0.3.5", 11, Muted));
         side.Children.Add(new Border { Height = 40 });
         side.Children.Add(Btn("◉   配色工作室", () => ShowPage("colors")));
         side.Children.Add(Btn("▥   硬件监控", () => ShowPage("monitor")));
@@ -151,6 +151,26 @@ public sealed class MainWindow : Window
             sync.Children.Add(Text("插件安装后需重启 SignalRGB；关闭上方回退选项会在等待或中断时熄灭面板。", 11, Muted));
         }
         right.Children.Add(Card(sync));
+        if (settings.SignalRgbSync)
+        {
+            var filters = new StackPanel(); filters.Children.Add(Text("同步调色", 18));
+            filters.Children.Add(Check("启用调色 · 取消勾选对比原效果", settings.SignalRgbFiltersEnabled, v => Change(() => settings.SignalRgbFiltersEnabled = v)));
+            var grid = new Grid(); grid.ColumnDefinitions.Add(new()); grid.ColumnDefinitions.Add(new());
+            grid.RowDefinitions.Add(new()); grid.RowDefinitions.Add(new());
+            void FilterField(UIElement field, int column, int row)
+            {
+                if (field is FrameworkElement element) element.Margin = new Thickness(column == 1 ? 10 : 0, 0, column == 0 ? 10 : 0, 0);
+                Grid.SetColumn(field, column); Grid.SetRow(field, row); grid.Children.Add(field);
+            }
+            FilterField(SliderField("曝光补偿", settings.SignalRgbExposure, -3, 3, " EV", v => settings.SignalRgbExposure = v), 0, 0);
+            FilterField(SliderField("亮度增益", settings.SignalRgbBrightness, 0, 200, "%", v => settings.SignalRgbBrightness = v), 1, 0);
+            FilterField(SliderField("饱和度", settings.SignalRgbSaturation, 0, 200, "%", v => settings.SignalRgbSaturation = v), 0, 1);
+            FilterField(SliderField("对比度", settings.SignalRgbContrast, 0, 200, "%", v => settings.SignalRgbContrast = v), 1, 1);
+            filters.Children.Add(grid);
+            filters.Children.Add(Btn("重置调色", () => Change(() => { settings.SignalRgbFiltersEnabled = true; settings.SignalRgbExposure = 0; settings.SignalRgbBrightness = settings.SignalRgbSaturation = settings.SignalRgbContrast = 100; }, true)));
+            filters.Children.Add(Text("平滑后调色，再应用整体亮度。纯黑保持熄灭；参数过高会让亮部变白。重置不改变平滑强度。", 11, Muted));
+            right.Children.Add(Card(filters));
+        }
         var effects = new StackPanel(); effects.Children.Add(Text("空间 × 动画", 18, Accent)); effects.Children.Add(Text("空间样式", 12, Muted));
         effects.Children.Add(Combo(["线性渐变", "径向渐变", "镜像渐变", "环绕渐变", "条纹拼色", "区域拼色", "单色常亮"], (int)settings.Pattern, i => Change(() => settings.Pattern = (Pattern)i, true)));
         effects.Children.Add(Text("动画方式", 12, Muted)); effects.Children.Add(Combo(["静止", "循环流动", "来回流动", "整体颜色过渡", "呼吸", "扫光", "波纹", "温度联动", "负载联动"], (int)settings.Motion, i => Change(() => settings.Motion = (Motion)i, true)));
@@ -309,7 +329,7 @@ public sealed class MainWindow : Window
     {
         streaming = true; previousOutput = null; settings.Simulated = false; if (streamButton is not null) streamButton.Content = "■ 停止实时输出"; notice.Text = "实时输出已开始。关闭窗口可按左侧选项继续后台运行。";
     }
-    object Diagnostic() => new { Version = "0.3.4", Time = DateTimeOffset.Now, OS = Environment.OSVersion.ToString(), Hid = HidService.Enumerate(), hid.Pm, hid.Sub, hid.Status, hid.RawHandshake, Sensors = sensors.Snapshot, SensorError = sensors.Error, sensors.DriverStatus, FramesSent = frames, SignalRgb = new { Status = BridgeStatus(), Received = signalBridge?.Received, Rejected = signalBridge?.Rejected }, TrccRunning = HidService.TrccRunning };
+    object Diagnostic() => new { Version = "0.3.5", Time = DateTimeOffset.Now, OS = Environment.OSVersion.ToString(), Hid = HidService.Enumerate(), hid.Pm, hid.Sub, hid.Status, hid.RawHandshake, Sensors = sensors.Snapshot, SensorError = sensors.Error, sensors.DriverStatus, FramesSent = frames, SignalRgb = new { Status = BridgeStatus(), Received = signalBridge?.Received, Rejected = signalBridge?.Rejected }, TrccRunning = HidService.TrccRunning };
     void ExportDiagnostic() { var d = new SaveFileDialog { Filter = "诊断 JSON (*.json)|*.json", FileName = "Thermalright-diagnostic.json" }; if (d.ShowDialog(this) == true) { File.WriteAllText(d.FileName, JsonSerializer.Serialize(Diagnostic(), SettingsStore.Json)); notice.Text = "诊断已导出，包含设备路径和传感器 ID。"; } }
     void UpdateDiagnostic() { if (diagnosticText is not null) diagnosticText.Text = $"状态：{hid.Status}\n设备路径：{hid.DevicePath}\nPM={hid.Pm} SUB={hid.Sub}\n原始握手：{hid.RawHandshake}\n传感器：{sensors.Snapshot.Length} 项\n传感器错误：{sensors.Error}\n固件可能每次上电只响应一次握手；无有效响应时停止，不猜测型号。\n"; }
     void Tick(object? sender, EventArgs e)

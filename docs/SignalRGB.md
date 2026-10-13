@@ -19,6 +19,16 @@ The option **同步中断两秒后回到独立配色** enables fallback to the s
 
 Filtering precedes numeric masks and brightness, so unlit digit segments do not artificially darken adjacent samples. It does not add temporal interpolation. Independent effects and fallback effects are unaffected.
 
+## Color grading (0.3.5)
+
+The **同步调色** card provides exposure compensation (-3 to +3 EV), brightness gain (0–200%), saturation (0–200%) and contrast (0–200%). Default values are 0 EV and 100% for the remaining controls. These defaults, or disabling grading, preserve input colors exactly. The reset button restores these values and enables grading without changing smoothing.
+
+Processing order: received colors → spatial smoothing → exposure → saturation → contrast → brightness gain → channel clipping → numeric mask → overall display brightness. Exposure uses sRGB transfer functions to apply `2^EV` in linear light; the remaining controls operate on the encoded RGB values. This is a practical color adjustment model, not a calibration of the panel's LEDs.
+
+Saturation mixes channels around a weighted grayscale value. Contrast pivots encoded channels around 0.5. Brightness gain scales the resulting RGB channels. Values are clipped to the existing RGB output range, so excessive gains can flatten highlights into white. Exact black input remains off, including at reduced contrast. Global brightness and the existing hardware channel scaling remain in place.
+
+Settings participate in save/load, presets and undo/redo. Grading affects fresh SignalRGB frames only; independent and fallback effects are unchanged. No plugin update is needed for this feature.
+
 ## Local protocol
 
 Discovery: HTTP GET `127.0.0.1:18742/info` returns protocol version 1, 93 LEDs, UDP port 18743 and a receiver-session token. GET `/status` reports received/rejected counts and freshness without exposing that token.

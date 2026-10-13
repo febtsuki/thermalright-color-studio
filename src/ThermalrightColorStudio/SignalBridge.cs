@@ -85,6 +85,7 @@ public sealed class SignalBridge : IDisposable
         var mask = PanelLayout.Mask(metrics, source, settings.Fahrenheit); var output = new Rgb[93];
         if (!settings.Enabled) return output;
         colors = SignalColorSmoothing.Apply(colors, settings.SignalRgbSmoothing);
+        colors = SignalColorFilters.Apply(colors, settings);
         for (int i = 0; i < 93; i++) if (mask[i]) output[i] = colors[i].Scale(settings.Brightness / 100); return output;
     }
     public static string InstallPlugin()

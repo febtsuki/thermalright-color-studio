@@ -4,7 +4,7 @@
     <UseWPF>true</UseWPF><UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable><ImplicitUsings>disable</ImplicitUsings>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-    <AssemblyName>ThermalrightColorStudio</AssemblyName><Version>0.3.4</Version>
+    <AssemblyName>ThermalrightColorStudio</AssemblyName><Version>0.3.5</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets/StudioIcon.ico</ApplicationIcon>
     <StartupObject>ThermalrightColorStudio.Program</StartupObject>
