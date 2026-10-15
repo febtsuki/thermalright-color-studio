@@ -16,9 +16,11 @@ Displays real CPU/GPU temperature, power, clock and load, with source rotation a
 
 ## Run
 
-Validated on Windows 11 x64, PS120 DIGITAL with USB `0416:8001`, handshake `PM=49 / SUB=96`, LF8 93-segment layout, and SignalRGB 2.5.74. An identical USB ID alone does not establish compatibility.
+Validated on Windows 11 x64, PS120 DIGITAL with USB `0416:8001`, handshake `PM=49 / SUB=96`, LF8 93-segment layout, and SignalRGB 2.5.74 / 2.5.80. An identical USB ID alone does not establish compatibility.
 
 Download the portable ZIP from Releases, extract it to a writable directory, completely exit TRCC, and run `ThermalrightColorStudio.exe`. The .NET runtime is bundled. Administrator privileges and separately installed [PawnIO 2.2.0](https://github.com/namazso/PawnIO.Setup/releases/tag/2.2.0) are required for low-level CPU sensor access. No driver is bundled or automatically installed.
+
+Plugin installation now targets the running SignalRGB version (or the newest fully installed version). Optional automatic repair restores existing program-directory bridge installations after updates; restarting SignalRGB may still be required to load recovered files.
 
 Settings live in `data/` beside the EXE. Copy that directory when upgrading. Unknown layouts are rejected; unavailable readings are left blank. There are no PWM or firmware controls. Full sleep/disconnect recovery is not yet implemented.
 
@@ -33,7 +35,7 @@ Use Windows x64 and .NET SDK 10.0.401:
 dotnet ./src/ThermalrightColorStudio/bin/Release/net10.0-windows/win-x64/ThermalrightColorStudio.dll --self-test ./test-results.txt
 ```
 
-The portable app is produced in `publish/`. There are 56 automated checks; see [validation](docs/Validation.md) for their scope and actual hardware observations. Dependencies are locked in `packages.lock.json`.
+The portable app is produced in `publish/`. There are 64 automated checks; see [validation](docs/Validation.md) for their scope and actual hardware observations. Dependencies are locked in `packages.lock.json`.
 
 ## Credits
 

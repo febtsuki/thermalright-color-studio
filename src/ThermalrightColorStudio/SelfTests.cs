@@ -103,6 +103,40 @@ public static class SelfTests
         Check("调色参数限定安全范围", gradeLimits.SignalRgbExposure == 3 && gradeLimits.SignalRgbBrightness == 0 && gradeLimits.SignalRgbSaturation == 200 && gradeLimits.SignalRgbContrast == 0);
         bool badGrade = false; try { new StudioSettings { SignalRgbExposure = double.NaN }.Validate(); } catch (InvalidDataException) { badGrade = true; }
         Check("拒绝无效调色数值", badGrade);
+        string pluginTestRoot = Path.Combine(Path.GetTempPath(), "ColorStudio-plugin-tests-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(pluginTestRoot);
+        try
+        {
+            Check("无 SignalRGB 安装时不选择程序路径", SignalPluginPaths.FindProgramDirectory(pluginTestRoot, null) is null);
+            string VersionFolder(string version, bool executable = true)
+            {
+                string directory = Path.Combine(pluginTestRoot, "app-" + version, "Signal-x64"); Directory.CreateDirectory(directory);
+                if (executable) File.WriteAllText(Path.Combine(directory, "SignalRgb.exe"), "test fixture");
+                return directory;
+            }
+            string older = VersionFolder("2.5.9"), newer = VersionFolder("2.5.80");
+            string expectedPlugin = Path.Combine(newer, "Plugins", "ColorStudio");
+            Check("按版本号选择新版而非字符串顺序", SignalPluginPaths.FindProgramDirectory(pluginTestRoot, null) == expectedPlugin);
+            Check("优先实际运行版本而非预下载版本", SignalPluginPaths.FindProgramDirectory(pluginTestRoot, older) == Path.Combine(older, "Plugins", "ColorStudio"));
+            string oldPlugin = Path.Combine(older, "Plugins", "ColorStudio"); Directory.CreateDirectory(oldPlugin);
+            string ownedScript = Path.Combine(oldPlugin, SignalPluginPaths.ScriptName);
+            File.WriteAllText(ownedScript, "// Color Studio SignalRGB bridge. test fixture");
+            Check("旧版存在插件不会把新安装写回旧目录", SignalPluginPaths.FindProgramDirectory(pluginTestRoot, null) == expectedPlugin);
+            _ = VersionFolder("invalid"); _ = VersionFolder("99.0", false);
+            Check("忽略无效或未完整安装的版本目录", SignalPluginPaths.FindProgramDirectory(pluginTestRoot, null) == expectedPlugin);
+            Check("已有自有插件允许恢复新版本目录", SignalPluginPaths.CanRepair(pluginTestRoot, expectedPlugin));
+            Directory.CreateDirectory(expectedPlugin);
+            string disabled = Path.Combine(expectedPlugin, SignalPluginPaths.ScriptName + ".disabled");
+            File.WriteAllText(disabled, "disabled by user or crash guard");
+            Check("自动修复尊重已停用的桥接插件", !SignalPluginPaths.CanRepair(pluginTestRoot, expectedPlugin));
+            File.Delete(disabled); File.WriteAllText(ownedScript, "unrelated file");
+            Check("没有自有安装时不静默首次安装", !SignalPluginPaths.CanRepair(pluginTestRoot, expectedPlugin));
+        }
+        finally
+        {
+            string full = Path.GetFullPath(pluginTestRoot), tempRoot = Path.GetFullPath(Path.GetTempPath());
+            if (full.StartsWith(tempRoot, StringComparison.OrdinalIgnoreCase) && Path.GetFileName(full).StartsWith("ColorStudio-plugin-tests-", StringComparison.Ordinal)) Directory.Delete(full, true);
+        }
         return string.Join(Environment.NewLine, passed) + $"\n{passed.Count} checks passed.\n";
     }
 }

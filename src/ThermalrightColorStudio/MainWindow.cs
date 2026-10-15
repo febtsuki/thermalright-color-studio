@@ -29,6 +29,7 @@ public sealed class MainWindow : Window
     System.Windows.Forms.NotifyIcon? tray;
     bool streaming, paused, rebuilding, closing, connecting; Task? writeTask; long frames; double animationTime, previousTick, lastSample; string page = "colors", mappingSignature = "";
     bool layoutAllowed;
+    double lastPluginRepair = double.NegativeInfinity;
     Rgb[]? previousOutput; double lastOutput; CancellationTokenSource? testStop;
     string settingsFile => Path.Combine(SettingsStore.Root, "settings.json");
     readonly string[] args;
@@ -43,7 +44,7 @@ public sealed class MainWindow : Window
         StudioTheme.Apply(settings.LightTheme); ApplyStyles();
         var root = new Grid(); root.ColumnDefinitions.Add(new() { Width = new GridLength(206) }); root.ColumnDefinitions.Add(new()); Content = root;
         var side = new StackPanel { Margin = new Thickness(20, 26, 16, 20) }; root.Children.Add(new Border { Background = StudioTheme.Sidebar, Child = side });
-        side.Children.Add(Text("THERMALRIGHT", 11, Muted)); side.Children.Add(Text("Color Studio", 24)); side.Children.Add(Text("PS120 DIGITAL / v0.3.5", 11, Muted));
+        side.Children.Add(Text("THERMALRIGHT", 11, Muted)); side.Children.Add(Text("Color Studio", 24)); side.Children.Add(Text("PS120 DIGITAL / v0.3.6", 11, Muted));
         side.Children.Add(new Border { Height = 40 });
         side.Children.Add(Btn("◉   配色工作室", () => ShowPage("colors")));
         side.Children.Add(Btn("▥   硬件监控", () => ShowPage("monitor")));
@@ -147,6 +148,7 @@ public sealed class MainWindow : Window
             sync.Children.Add(SliderField("空间平滑 · 高斯加权", settings.SignalRgbSmoothing, 0, 100, "%", v => settings.SignalRgbSmoothing = v));
             sync.Children.Add(Text("0% 保留原始；强度越大，相邻段的色块过渡越柔和。仅处理同步颜色，不影响数字形状。", 11, Muted));
             sync.Children.Add(Check("同步中断两秒后回到独立配色", settings.SignalRgbFallback, v => Change(() => settings.SignalRgbFallback = v)));
+            sync.Children.Add(Check("SignalRGB 更新后自动恢复已安装的桥接", settings.SignalRgbAutoRepair, v => { Change(() => settings.SignalRgbAutoRepair = v); SettingsStore.Save(settingsFile, settings); }));
             sync.Children.Add(Row(Btn("安装桥接插件", () => { string path = SignalBridge.InstallPlugin(); notice.Text = "插件已安装：" + path + "。请重启 SignalRGB，然后在布局中摆放 Color Studio 面板。"; }), Btn("重启接收", UpdateBridge)));
             sync.Children.Add(Text("插件安装后需重启 SignalRGB；关闭上方回退选项会在等待或中断时熄灭面板。", 11, Muted));
         }
@@ -329,12 +331,18 @@ public sealed class MainWindow : Window
     {
         streaming = true; previousOutput = null; settings.Simulated = false; if (streamButton is not null) streamButton.Content = "■ 停止实时输出"; notice.Text = "实时输出已开始。关闭窗口可按左侧选项继续后台运行。";
     }
-    object Diagnostic() => new { Version = "0.3.5", Time = DateTimeOffset.Now, OS = Environment.OSVersion.ToString(), Hid = HidService.Enumerate(), hid.Pm, hid.Sub, hid.Status, hid.RawHandshake, Sensors = sensors.Snapshot, SensorError = sensors.Error, sensors.DriverStatus, FramesSent = frames, SignalRgb = new { Status = BridgeStatus(), Received = signalBridge?.Received, Rejected = signalBridge?.Rejected }, TrccRunning = HidService.TrccRunning };
+    object Diagnostic() => new { Version = "0.3.6", Time = DateTimeOffset.Now, OS = Environment.OSVersion.ToString(), Hid = HidService.Enumerate(), hid.Pm, hid.Sub, hid.Status, hid.RawHandshake, Sensors = sensors.Snapshot, SensorError = sensors.Error, sensors.DriverStatus, FramesSent = frames, SignalRgb = new { Status = BridgeStatus(), Received = signalBridge?.Received, Rejected = signalBridge?.Rejected }, TrccRunning = HidService.TrccRunning };
     void ExportDiagnostic() { var d = new SaveFileDialog { Filter = "诊断 JSON (*.json)|*.json", FileName = "Thermalright-diagnostic.json" }; if (d.ShowDialog(this) == true) { File.WriteAllText(d.FileName, JsonSerializer.Serialize(Diagnostic(), SettingsStore.Json)); notice.Text = "诊断已导出，包含设备路径和传感器 ID。"; } }
     void UpdateDiagnostic() { if (diagnosticText is not null) diagnosticText.Text = $"状态：{hid.Status}\n设备路径：{hid.DevicePath}\nPM={hid.Pm} SUB={hid.Sub}\n原始握手：{hid.RawHandshake}\n传感器：{sensors.Snapshot.Length} 项\n传感器错误：{sensors.Error}\n固件可能每次上电只响应一次握手；无有效响应时停止，不猜测型号。\n"; }
     void Tick(object? sender, EventArgs e)
     {
         double elapsed = clock.Elapsed.TotalSeconds; if (!paused) animationTime += elapsed - previousTick; previousTick = elapsed; double time = animationTime;
+        if (!args.Contains("--render") && settings.SignalRgbSync && settings.SignalRgbAutoRepair && elapsed - lastPluginRepair >= 30)
+        {
+            lastPluginRepair = elapsed;
+            try { if (SignalBridge.RepairPluginAfterUpdate() is { } path) notice.Text = "已恢复新版 SignalRGB 的桥接文件，请重启 SignalRGB 加载：" + path; }
+            catch (Exception ex) { notice.Text = "桥接自动修复未完成：" + ex.Message; }
+        }
         string source = settings.Rotate ? (((int)(clock.Elapsed.TotalSeconds / settings.RotateSeconds) % 2 == 0) ? settings.Source : settings.Source == "CPU" ? "GPU" : "CPU") : settings.Source;
         var real = sensors.GetMetrics(source, settings);
         var metrics = settings.Simulated ? new Metrics(47, 36, 2450, 23) : real;

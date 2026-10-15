@@ -2,7 +2,7 @@
 
 为 **Thermalright PS120 DIGITAL / LF8 面板**制作的 Windows 配色与监控工具。
 
-[English](README.en.md) · [下载 0.3.5](https://github.com/febtsuki/thermalright-color-studio/releases/latest) · [SignalRGB 接入](docs/SignalRGB.md)
+[English](README.en.md) · [下载 0.3.6](https://github.com/febtsuki/thermalright-color-studio/releases/latest) · [SignalRGB 接入](docs/SignalRGB.md)
 
 ![Color Studio 界面，数字为模拟示例](docs/screenshots/studio.png)
 
@@ -26,14 +26,14 @@
 | --- | --- |
 | 系统 | Windows 11 x64 |
 | 面板 | PS120 DIGITAL，USB `0416:8001`，握手 `PM=49 / SUB=96`，LF8 93 段 |
-| SignalRGB | 2.5.74 |
+| SignalRGB | 2.5.74、2.5.80 |
 | 传感器 | Intel CPU / NVIDIA GPU 实机验证；使用 LibreHardwareMonitor |
 
 相同 VID/PID 不代表相同布局。程序会检查身份，不向未知布局发送颜色。其他型号与休眠/断线恢复尚未全面验证；没有风扇 PWM 或固件修改功能。
 
 ## 使用
 
-1. 从 [Releases](https://github.com/febtsuki/thermalright-color-studio/releases) 下载 `thermalright-color-studio-v0.3.5-win-x64.zip` 并解压到可写目录。
+1. 从 [Releases](https://github.com/febtsuki/thermalright-color-studio/releases) 下载 `thermalright-color-studio-v0.3.6-win-x64.zip` 并解压到可写目录。
 2. 完全退出原版 TRCC，包括系统托盘，避免同时写入 USB 面板。
 3. 双击 `ThermalrightColorStudio.exe`。程序会请求管理员权限，用于读取底层传感器；.NET 运行库已包含。
 4. CPU 底层传感器还需要单独安装官方 [PawnIO 2.2.0](https://github.com/namazso/PawnIO.Setup/releases/tag/2.2.0)。本包不包含或自动安装驱动。
@@ -43,7 +43,7 @@
 
 ### SignalRGB 与平滑
 
-请参阅 [接入说明](docs/SignalRGB.md)。两款软件需要同时运行；Color Studio 独占 USB，SignalRGB 通过本机回环网络发送颜色。
+请参阅 [接入说明](docs/SignalRGB.md)。两款软件需要同时运行；Color Studio 独占 USB，SignalRGB 通过本机回环网络发送颜色。0.3.6 会优先把插件安装到正在运行的 SignalRGB 版本目录；已有程序目录安装可在版本更新后自动恢复。恢复后可能仍需重启 SignalRGB 加载，详见接入说明。
 
 在“灯光来源”选择 SignalRGB 同步，调节“空间平滑”。**0% 保留原色，40% 可作为初次对比值**。强度越高，颜色越柔和，也会减少局部反差。平滑发生在生成数字之前，不会模糊数字形状。每个实体段仍只能显示一种颜色。
 
@@ -67,7 +67,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ./Manage-Autostart.ps1
 ./build.ps1
 ```
 
-输出在 `publish/`。NuGet 依赖由 `packages.lock.json` 锁定。运行不涉及硬件的 56 项检查：
+输出在 `publish/`。NuGet 依赖由 `packages.lock.json` 锁定。运行不涉及硬件的 64 项检查：
 
 ```powershell
 dotnet ./src/ThermalrightColorStudio/bin/Release/net10.0-windows/win-x64/ThermalrightColorStudio.dll --self-test ./test-results.txt

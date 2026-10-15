@@ -34,6 +34,7 @@ public sealed class StudioSettings
     public bool LightTheme { get; set; }
     public bool SignalRgbSync { get; set; }
     public bool SignalRgbFallback { get; set; } = true;
+    public bool SignalRgbAutoRepair { get; set; } = true;
     public double SignalRgbSmoothing { get; set; }
     public bool SignalRgbFiltersEnabled { get; set; } = true;
     public double SignalRgbExposure { get; set; }

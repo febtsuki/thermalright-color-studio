@@ -88,32 +88,50 @@ public sealed class SignalBridge : IDisposable
         colors = SignalColorFilters.Apply(colors, settings);
         for (int i = 0; i < 93; i++) if (mask[i]) output[i] = colors[i].Scale(settings.Brightness / 100); return output;
     }
+    static string SignalAppRoot => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VortxEngine");
+    static string? ActiveSignalDirectory()
+    {
+        foreach (var process in Process.GetProcessesByName("SignalRgb"))
+        {
+            using (process)
+            {
+                try { if (process.MainModule?.FileName is { } path) return Path.GetDirectoryName(path); }
+                catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or System.NotSupportedException) { }
+            }
+        }
+        return null;
+    }
     public static string InstallPlugin()
     {
         string? userDirectory = Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\WhirlwindFX\SignalRgb", "UserDirectory", null) as string;
-        string directory = Path.Combine(string.IsNullOrWhiteSpace(userDirectory) ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "WhirlwindFX") : userDirectory, "Plugins");
-        // Prefer an existing Color Studio installation under SignalRGB's ASCII program path.
-        // This avoids reintroducing the user's non-ASCII OneDrive path after a migration.
-        string appRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VortxEngine");
-        if (Directory.Exists(appRoot))
-        {
-            var existing = Directory.EnumerateDirectories(appRoot, "app-*").Select(path => new { Directory = Path.Combine(path, "Signal-x64", "Plugins", "ColorStudio"), Version = System.Version.TryParse(Path.GetFileName(path)[4..], out var version) ? version : new System.Version() })
-                .Where(item => File.Exists(Path.Combine(item.Directory, "ColorStudio_SignalRGB_Bridge.js")))
-                .OrderByDescending(item => item.Version).FirstOrDefault();
-            if (existing is not null) directory = existing.Directory;
-        }
+        string directory = SignalPluginPaths.FindProgramDirectory(SignalAppRoot, ActiveSignalDirectory())
+            ?? Path.Combine(string.IsNullOrWhiteSpace(userDirectory) ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "WhirlwindFX") : userDirectory, "Plugins");
+        WritePluginFiles(directory);
+        return Path.Combine(directory, SignalPluginPaths.ScriptName);
+    }
+    public static string? RepairPluginAfterUpdate()
+    {
+        string? directory = SignalPluginPaths.FindProgramDirectory(SignalAppRoot, ActiveSignalDirectory());
+        if (directory is null || !SignalPluginPaths.CanRepair(SignalAppRoot, directory)) return null;
+        return WritePluginFiles(directory) ? Path.Combine(directory, SignalPluginPaths.ScriptName) : null;
+    }
+    static bool WritePluginFiles(string directory)
+    {
         Directory.CreateDirectory(directory);
-        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
-        // Install the service page before the script so a fresh scan sees a complete pair.
+        var assembly = System.Reflection.Assembly.GetExecutingAssembly(); bool changed = false;
         foreach (string extension in new[] { "qml", "js" })
         {
             string path = Path.Combine(directory, "ColorStudio_SignalRGB_Bridge." + extension);
             using var stream = assembly.GetManifestResourceStream("ThermalrightColorStudio.SignalRGBBridge." + extension) ?? throw new IOException("桥接插件资源缺失。");
             using var reader = new StreamReader(stream); string source = reader.ReadToEnd();
-            if (File.Exists(path) && File.ReadAllText(path) != source) File.Copy(path, path + ".backup-" + DateTime.Now.ToString("yyyyMMddHHmmss"), true);
-            string temporary = path + ".installing"; File.WriteAllText(temporary, source, new UTF8Encoding(false)); File.Move(temporary, path, true);
+            if (File.Exists(path))
+            {
+                if (File.ReadAllText(path) == source) continue;
+                File.Copy(path, path + ".backup-" + DateTime.Now.ToString("yyyyMMddHHmmss"), true);
+            }
+            string temporary = path + ".installing"; File.WriteAllText(temporary, source, new UTF8Encoding(false)); File.Move(temporary, path, true); changed = true;
         }
-        return Path.Combine(directory, "ColorStudio_SignalRGB_Bridge.js");
+        return changed;
     }
     public void Dispose()
     {

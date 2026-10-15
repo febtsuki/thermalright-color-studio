@@ -1,17 +1,25 @@
 # SignalRGB bridge
 
-Validated with SignalRGB 2.5.74. Both applications must remain running; Color Studio owns the USB display and applies real CPU/GPU digit masks.
+Validated with SignalRGB 2.5.74 and 2.5.80. Both applications must remain running; Color Studio owns the USB display and applies real CPU/GPU digit masks.
 
 ## Setup
 
 1. Start Color Studio and select **SignalRGB 同步** under **灯光来源**.
-2. Click **安装桥接插件**. It installs a matched JS/QML pair to the configured SignalRGB user Plugins directory, or updates an existing ColorStudio installation under SignalRGB's program Plugins directory.
+2. Click **安装桥接插件**. It installs a matched JS/QML pair under the running SignalRGB version's `Plugins/ColorStudio` directory, or the newest complete version if SignalRGB is not running. The configured user Plugins directory is a fallback only when no standard program installation is found.
 3. Completely quit and restart SignalRGB. Open the **Color Studio Bridge** third-party service. Registration is automatic; **Connect local Color Studio** can retry discovery.
 4. A **Color Studio PS120 Digital** lighting device should appear. Position it in the SignalRGB layout as desired. Color Studio reports a growing synchronized frame count.
 
-If a redirected Documents/OneDrive path containing non-ASCII characters causes a blank service icon or a service page that cannot reopen, an ASCII plugin path was successful in the validated setup. Copy the two source assets to `<SignalRGB installation>/Signal-x64/Plugins/ColorStudio/` as `ColorStudio_SignalRGB_Bridge.js` and `ColorStudio_SignalRGB_Bridge.qml`, disable only the old pair by renaming them to `.disabled`, and restart SignalRGB. The source files are named `Assets/SignalRGBBridge.js` and `.qml`. Program-directory access may require administrator rights. SignalRGB updates can replace this installation directory; check the plugin after upgrading.
+If a redirected Documents/OneDrive path containing non-ASCII characters causes a blank service icon or a service page that cannot reopen, an ASCII plugin path was successful in the validated setup. Copy the two source assets to `<SignalRGB installation>/Signal-x64/Plugins/ColorStudio/` as `ColorStudio_SignalRGB_Bridge.js` and `ColorStudio_SignalRGB_Bridge.qml`, disable only the old pair by renaming them to `.disabled`, and restart SignalRGB. The source files are named `Assets/SignalRGBBridge.js` and `.qml`. Program-directory access may require administrator rights. SignalRGB updates can replace this installation directory; 0.3.6 can recover an existing managed program-directory installation as described below.
 
 The option **同步中断两秒后回到独立配色** enables fallback to the saved independent effect. With fallback disabled, missing synchronization data produces a black frame. Restarting Color Studio refreshes the receiver session without announcing a second output device.
+
+## Recovery after SignalRGB updates (0.3.6)
+
+SignalRGB uses versioned installation directories, so custom plugins in `app-2.5.74` are not loaded by `app-2.5.80`. The installer now prefers the actual running version rather than an old directory that already contains the bridge. Version fallback uses numeric ordering and requires a complete SignalRgb.exe installation.
+
+With **SignalRGB 更新后自动恢复已安装的桥接** enabled, Color Studio checks at startup and every 30 seconds while synchronization is enabled. It only repairs a previously installed, identifiable Color Studio program-directory bridge; it does not silently perform an initial installation. Only its two JS/QML files are managed, unchanged files are not rewritten, and replaced files are backed up. Existing `.disabled` markers are respected, including crash rollback. The option can be disabled in the UI.
+
+If recovery happens after SignalRGB has scanned its plugins, restart SignalRGB to load the restored pair. Color Studio displays a notice when it restores files. This does not automatically restart SignalRGB or migrate its other plugins, Documents location or lighting settings.
 
 ## Smoothing
 
